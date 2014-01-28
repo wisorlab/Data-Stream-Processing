@@ -1,9 +1,8 @@
-Epoch-Based-Processing
+Triggered_Events
 ======================
 
-Epoch Based Processing
+Scripts categorized within the 'Triggered_Events' domain are scripts which make use of a TTL track, alongside the data stream itself, to process or interpret the data.
 
-<!-- Data analysis pipeline -->
 
 ### Table of Contents
 - exports
