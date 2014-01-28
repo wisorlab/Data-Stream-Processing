@@ -15,3 +15,7 @@ Export scripts may optionally process the data in some way that ought to be spec
 - UltraRealDeal.m
 	- *@input* - 
 	- *@output* - gives averages of *all* 'time zero' stimulation onsets.
+- WindowingAnalysis.m
+	- looks for stim onsets, and extracts a window of 500ms before and after each onset. The windowed data is then averaged and exported to Excel.
+	- *@input* - an edf file
+	- *@output* - Excel spreadsheet (and optioinally a plot) of processed data
