@@ -13,5 +13,5 @@ Export scripts may optionally process the data in some way that ought to be spec
 - VaryingPulseDuration
 
 - UltraRealDeal.m
-	@input - 
-	@output - gives averages of <b>all</b> 'time zero' stimulation onsets.
+	- *@input* - 
+	- *@output* - gives averages of *all* 'time zero' stimulation onsets.
