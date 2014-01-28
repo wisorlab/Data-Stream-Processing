@@ -1,7 +1,7 @@
 Triggered_Events
 ======================
 
-Scripts categorized within the 'Triggered_Events' domain are scripts which make use of a TTL track, alongside the data stream itself, to process or interpret the data.
+Scripts categorized within the 'Triggered_Events' domain are scripts which make use of a TTL track to process or interpret the data.
 
 
 ### Table of Contents
