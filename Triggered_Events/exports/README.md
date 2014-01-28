@@ -6,12 +6,12 @@ In the data analytics pipeline, 'Export' scripts act as an intermediary between 
 Export scripts may optionally process the data in some way that ought to be specific to their file name.
 
 ### Table of Contents
-	- AvgStimRealDeal.m
-		No idea what this does.
-	- DoseResponse.m
-		Likewise
-	- VaryingPulseDuration
+- AvgStimRealDeal.m
+	No idea what this does.
+- DoseResponse.m
+	Likewise
+- VaryingPulseDuration
 
-	- UltraRealDeal.m
-		@input - 
-		@output - gives averages of <i>all</i> 'time zero' stimulation onsets.
+- UltraRealDeal.m
+	@input - 
+	@output - gives averages of <b>all</b> 'time zero' stimulation onsets.
