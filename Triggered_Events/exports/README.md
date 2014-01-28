@@ -7,11 +7,11 @@ Export scripts may optionally process the data in some way that ought to be spec
 
 ### Table of Contents
 - AvgStimRealDeal.m
-	No idea what this does.
+	- No idea what this does.
 - DoseResponse.m
-	Likewise
+	- Likewise
 - VaryingPulseDuration
-
+	- Main analysis script for Michele's 'Varying Pulse Duration' experiment
 - UltraRealDeal.m
 	- *@input* - 
 	- *@output* - gives averages of *all* 'time zero' stimulation onsets.
