@@ -1,7 +1,7 @@
 Data-Stream-Processing
 ======================
 
-'Data Stream Processing' scripts are those which 
+<!-- 'Data Stream Processing' scripts are those which  -->
 
 <!-- Data analysis pipeline -->
 
