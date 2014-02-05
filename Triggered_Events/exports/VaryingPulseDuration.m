@@ -10,6 +10,7 @@ clear
 % NOTE: these values were calculated by Michele Moore and Dr. Wisor as the 
 % best representation of the effect that we're looking at.
 offsets = [0.01 0.012 0.014 0.016 0.018 0.020 0.022 0.024];
+% offsets = [ 0.0005 0.001 0.0025 0.005 0.010 ];
 
 % add path to mcBinRead.m
 addpath ../../../Matlab/etc/;
@@ -17,19 +18,18 @@ addpath ../../../Matlab/etc/;
 % add path to the XL class 
 addpath ../../../Matlab/etc/matlab-utils/;
 
-% instantiate an XL ActiveX object
-xl = XL;
-sheets = xl.addSheets({ 'Test' });
-xl.setCells(sheets{1}, [1,1], { 'Offset ms', 'Animal 1', 'Animal 2' });
-xl.setCells(sheets{1}, [1,2], offsets');
-
 % open the file modal and get some '.raw' files
 [files,path] = uigetfile({'*raw','Binary MCS Files (*.raw)';'*.*','All Files'; },'Select Data File(s)','MultiSelect','On');
 if isstr(files), files = {files}; end
 
+% instantiate an XL ActiveX object
+xl = XL;
+sheets = xl.addSheets( files );
+xl.rmDefaultSheets();
+
 for i=1:length(files)
 
-	% exstract values from the file name into a struct
+	% extract values from the file name into a struct
 	nameparts = regexp(files{i}, [
 		'(?<date>\d+-\d+-\d+)'...		% date like M-D-Y
 		'\s+'...						% space(s)						 
@@ -42,6 +42,9 @@ for i=1:length(files)
 		'(?<ext>\.\w+)'...				% file extension
 		],'names');
 
+	xl.setCells(sheets{i}, [1,2], offsets' );
+	xl.setCells(sheets{i}, [1,1], { files{i} });
+
 	% import the data as 'matrix'
 	% copy/pasted from one of Jon Loft's programs
 	[hdr,data] = mcBinRead([ path files{i} ]);
@@ -53,10 +56,39 @@ for i=1:length(files)
 
 	% find TTL onsets
 	onsets = find( diff(ttl) == 1 );
-	% onsets = matrix( diff(ttl) == 1, 1 );
 
-	% find the indexes in matrix where 
+	% find the indexes in matrix at each millisecond offset from each TTL onset 
+	% i.e. the index offsets in the 'offsets' array are added to each TTL onset index
 	idxs = ( ones(length(offsets),1) * onsets' )' + ( ones(length(onsets),1) * ( offsets * hdr.sampleRate ) );
+
+	% find the matrix values at each index in 'idxs'
+	values = Utils.slice( matrix(idxs,3), 8 );
+
+	% ================================= EXCEL Output ================================
+
+	% write the 'values' matrix
+	xl.setCells(sheets{i},[2,2],values')
+
+	% write the vertical row labels
+	xl.setCells(sheets{i},[1,11], {'Sum of column', 'Max of column', '', 'Average of the sums', 'Std/sqrt(length) of the sums', '', 'Average of the max', 'Std/sqrt(length) of the max' }' );
+
+	% write the sum of the columns
+	xl.setCells(sheets{i},[2,11], sum(values') );
+
+	% write the max of the columns
+	xl.setCells(sheets{i},[2,12], max(values') );
+
+	% write the average of the sums
+	xl.setCells(sheets{i},[2,14], mean(sum(values')) );
+
+	% write the std/sqrt(7) of the sums
+	xl.setCells(sheets{i},[2,15], std(sum(values'))/sqrt( length(values) ) );
+
+	% write the average of the max
+	xl.setCells(sheets{i},[2,17], mean(max(values')) );
+
+	% write the std/sqrt(7) of the max
+	xl.setCells(sheets{i},[2,18], std(max(values'))/sqrt( length(values) ) );
 
 
 end
