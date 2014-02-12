@@ -1,6 +1,8 @@
 % Output routine for the Ultra Real Deal files
 clearvars -EXCEPT stimMean1;
 
+addpath ./AvgStim/;
+
 [files,path] = uigetfile({'*raw','Binary MCS Files (*.raw)';'*.*','All Files';'*.edf','EDF Files (*.edf)';'*.txt','Text Files (*.txt)';},... % Open the user interface for opening files
 'Select Data File(s)','MultiSelect','On');
 if ~iscell(files)

@@ -15,7 +15,7 @@ addpath ../../../Matlab/etc/matlab-utils/;
 [file,path] = uigetfile({'*xlsx','Excel Spreadsheet (*.xlsx)';'*.*','All Files'; },'Select Excel File','MultiSelect','Off');
 
 % instantiate an XL ActiveX object
-xl = XL(file);
+xl = XL([ path file ]);
 
 % get a reference to the sheet containing the 5000Hz data
 sheet = xl.Sheets.Item('5000 Hz');
@@ -36,7 +36,7 @@ for i=1:numrows
 		% parse the file info from each line to get the Hz
         num = Utils.split(trigData{i,3},'ms');
 		hz =  str2num( num{1} ); % '0.5ms' -> {int} 0.5
-		fc = 2 * round( hz * 10 / 2 ) * .0001; % 0.5 -> .0006 ( rounds up to nearest even number, multiplies by .0001)
+		fc = 2 * round( hz * 10 / 2 ) * .0001; % 0.5 -> .0006 ( round s up to nearest even number, multiplies by .0001)
 	catch
 		continue
 	end

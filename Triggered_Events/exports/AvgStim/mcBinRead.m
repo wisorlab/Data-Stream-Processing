@@ -64,7 +64,7 @@ if strcmp(reshape(fread(fid,29,'*char'),1,29),'MC_DataTool binary conversion');
         hdr.ElFactor = str2double(strtrim(header(ElIndeces(1)+5:ElIndeces(1)+strfind(header(ElIndeces(1):end),'AD')-5)));
         hdr.ElFactorUnits = strtrim(header(ElIndeces(1)+strfind(header(ElIndeces(1):end),'AD')-4:ElIndeces(1)+strfind(header(ElIndeces(1):end),'AD')));
     end
-    hdr.label = splitstring(strtrim(header(strfind(lower(header),'streams =')+9:strfind(lower(header),'eoh')-1)),';');
+    hdr.label = strsplit(strtrim(header(strfind(lower(header),'streams =')+9:strfind(lower(header),'eoh')-1)),';');
     data = fread(fid,'int16');
     data = reshape(data,numel(hdr.label),length(data)/numel(hdr.label));
     data = data';
