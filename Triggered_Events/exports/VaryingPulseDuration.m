@@ -42,6 +42,7 @@ for i=1:length(files)
 		'(?<ext>\.\w+)'...				% file extension
 		],'names');
 
+    % write the header information
 	xl.setCells(sheets{i}, [1,2], offsets' );
 	xl.setCells(sheets{i}, [1,1], { files{i} });
 
@@ -81,13 +82,13 @@ for i=1:length(files)
 	% write the average of the sums
 	xl.setCells(sheets{i},[2,14], mean(sum(values')) );
 
-	% write the std/sqrt(7) of the sums
+	% write the std/sqrt(length) of the sums
 	xl.setCells(sheets{i},[2,15], std(sum(values'))/sqrt( length(values) ) );
 
 	% write the average of the max
 	xl.setCells(sheets{i},[2,17], mean(max(values')) );
 
-	% write the std/sqrt(7) of the max
+	% write the std/sqrt(length) of the max
 	xl.setCells(sheets{i},[2,18], std(max(values'))/sqrt( length(values) ) );
 
 
