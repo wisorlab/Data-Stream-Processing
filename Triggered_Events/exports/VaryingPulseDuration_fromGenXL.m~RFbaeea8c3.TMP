@@ -1,0 +1,49 @@
+%=========================================================================
+% created by @jonbrennecke / http://github.com/jonbrennecke
+%=========================================================================
+
+clear 
+
+% add path to mcBinRead.m
+addpath ../../../Matlab/etc/;
+
+% add path to the XL class 
+addpath ../../../Matlab/etc/matlab-utils/;
+
+% open the file modal and get some '.raw' files
+[file,path] = uigetfile({'*xlsx','Excel Spreadsheet (*.xlsx)';'*.*','All Files'; },'Select Excel File','MultiSelect','Off');
+
+% instantiate an XL ActiveX object
+xl = XL(file);
+
+% get a reference to the sheet containing the 5000Hz data
+sheet = xl.Sheets.Item('5000 Hz');
+[ numcols, numrows ] = xl.sheetSize(sheet);
+
+% get the triggered and random data into two (very large) cell arrays
+header = xl.getCells( sheet, [1 1 numcols 1]);
+trigData = xl.getCells( sheet, [ 1 2 (numcols/2 + 1) numrows] );
+randData = xl.getCells( sheet, [ numcols/2+3 1 numcols/2-2 numrows] );
+
+% find where 'Trig 0' and 'Rand 0' occur in the file
+trig0 = find( cellfun(@(x)strcmp(x,'Trig 0'),header) == 1);
+rand0 = find( cellfun(@(x)strcmp(x,'Rand 0'),header) == 1);
+
+for i=1:numrows
+
+	try
+		% parse the file info from each line to get the Hz
+		hz = str2num( Utils.split(trigData{i,3},'ms'){1} ); % '0.5ms' -> {int} 0.5
+		fc = 2 * round( hz * 10 / 2 ) * .0001; % 0.5 -> .0006 ( rounds up to nearest even number, multiplies by .0001)
+	catch
+		continue
+	end
+
+	% get 71 data points starting at 'Trig X'
+	trigRow(i,:) = trigData(i,trig0 + (fc * 10000 / 2) : trig0 + (fc * 10000 / 2)+70); 
+
+end
+
+xlOut = XL;
+xlOut.addSheets({'0.5ms','1ms','2.5ms','5ms','10ms'});
+xlOut.rmDefaultSheets();

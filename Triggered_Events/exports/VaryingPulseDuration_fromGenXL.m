@@ -138,32 +138,6 @@ for i=1:length(sheets)
 	xl.setCells(sheet,[1,76], {'Sum of column', 'Max of column', '', 'Average of the sums', 'Std/sqrt(length) of the sums', '', 'Average of the max', 'Std/sqrt(length) of the max', '', 'Area under the curve', 'Peak Value', '', 'FFT'  }' );
 	xl.setCells(sheet,[randX,76], {'Sum of column', 'Max of column', '', 'Average of the sums', 'Std/sqrt(length) of the sums', '', 'Average of the max', 'Std/sqrt(length) of the max', '', 'Area under the curve', 'Peak Value', '', 'FFT'  }' );
 
-	% write the sum of the columns
-	xl.setCells(sheet,[2,76], sum( field') / 10 );
-	xl.setCells(sheet,[( randX + 1 ),76], sum( field2')  / 10 );
-
-	% write the max of the columns
-	xl.setCells(sheet,[2,77], max( field' ) );
-	xl.setCells(sheet,[( randX + 1 ),77], max( field2' ) );
-
-	% write the average of the sums
-	xl.setCells(sheet,[2,79], mean( sum(field') / 10 ) );
-	xl.setCells(sheet,[( randX + 1 ),79], mean( sum(field2') / 10 ) );
-
-	n = size(field,1);
-
-	% write the std/sqrt(n) of the sums
-	xl.setCells(sheet,[2,80], std(sum(field') / 10 )/sqrt( n ) );
-	xl.setCells(sheet,[( randX + 1 ),80], std(sum(field2') / 10 )/sqrt( n ) );
-
-	% write the average of the max
-	xl.setCells(sheet,[2,82], mean( max( field' ) ) );
-	xl.setCells(sheet,[( randX + 1 ),82], mean( max( field2' ) ) );
-
-	% write the std/sqrt(n) of the max
-	xl.setCells(sheet,[2,83], std(max(field'))/sqrt( n ) );
-	xl.setCells(sheet,[( randX + 1 ),83], std(max(field2'))/sqrt( n ) );
-
 	% ========================================================= peaks and area under curve
 
 	value = Utils.split(sheets{i}.Name,'ms');
@@ -237,7 +211,7 @@ xl = XL; % new workbook
 
 for i=1:length(sheets)
 
-	randX = size(field,2) + 4;
+	randX = size(field,2) + 6;
 
 	% determine which sheet to write to
 	names = fieldnames(blocks);
@@ -253,7 +227,8 @@ for i=1:length(sheets)
 
 	% next write the filenames over 'Trig' and 'Rand'
 	field3 = getfield( filenames, char(names(i) ) );
-	xl.setCells( sheet, [ 1 2 ], field3', hex2dec('FF6666'));
+	field3 = [ 'Filenames' field3 ];
+	xl.setCells( sheet, [ 1 1 ], field3', hex2dec('FF6666'));
 
 	startAt = 2 * round(  str2num( value{1} ) * 10 / 2 ) * .0001;
 	x = [ startAt : 0.0002 : startAt + 0.0002 * 70 ];
@@ -266,73 +241,93 @@ for i=1:length(sheets)
 
 	infoY = 10;
 
-	% write the vertical row labels
-	xl.setCells(sheet,[1,infoY + 6], {'Sum of column', 'Max of column', '', 'Average of the sums', 'Std/sqrt(length) of the sums', '', 'Average of the max', 'Std/sqrt(length) of the max', '', 'Area under the curve', 'Peak Value', '', 'FFT'  }' );
-	xl.setCells(sheet,[randX,infoY + 6], {'Sum of column', 'Max of column', '', 'Average of the sums', 'Std/sqrt(length) of the sums', '', 'Average of the max', 'Std/sqrt(length) of the max', '', 'Area under the curve', 'Peak Value', '', 'FFT'  }' );
-
-	% write the sum of the columns
-	xl.setCells(sheet,[2,infoY + 6], sum( field') / 10 );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 6], sum( field2')  / 10 );
-
-	% write the max of the columns
-	xl.setCells(sheet,[2,infoY + 7], max( field' ) );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 7], max( field2' ) );
-
-	% write the average of the sums
-	xl.setCells(sheet,[2,infoY + 9], mean( sum(field') / 10 ) );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 9], mean( sum(field2') / 10 ) );
-
-	n = size(field,1);
-
-	% write the std/sqrt(n) of the sums
-	xl.setCells(sheet,[2,infoY + 10], std(sum(field') / 10 )/sqrt( n ) );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 10], std(sum(field2') / 10 )/sqrt( n ) );
-
-	% write the average of the max
-	xl.setCells(sheet,[2,infoY + 12], mean( max( field' ) ) );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 12], mean( max( field2' ) ) );
-
-	% write the std/sqrt(n) of the max
-	xl.setCells(sheet,[2,infoY + 13], std(max(field'))/sqrt( n ) );
-	xl.setCells(sheet,[( randX + 1 ),infoY + 13], std(max(field2'))/sqrt( n ) );
-
 	% ========================================================= peaks and area under curve
 
-	value = Utils.split(sheets{i}.Name,'ms');
-	startAt = 2 * round(  str2num( value{1} ) * 10 / 2 ) * .0001;
-	x = [ startAt : 0.0002 : startAt + 0.0002 * 70 ];
-	vertHeader = Utils.split(sprintf('Trig %f\n',x'),'\n');
-	xl.setCells(sheet,[3 ,infoY + 19], vertHeader', '99FFCC' );
-	vertHeader = Utils.split(sprintf('Rand %f\n',x'),'\n');
-	xl.setCells(sheet,[randX ,infoY + 19], vertHeader', '99FFCC' );
+	% value = Utils.split(sheets{i}.Name,'ms');
+	% startAt = 2 * round(  str2num( value{1} ) * 10 / 2 ) * .0001;
+	% x = [ startAt : 0.0002 : startAt + 0.0002 * 70 ];
+	% vertHeader = Utils.split(sprintf('Trig %f\n',x'),'\n');
+	% xl.setCells(sheet,[3 ,infoY + 19], vertHeader', '99FFCC' );
+	% vertHeader = Utils.split(sprintf('Rand %f\n',x'),'\n');
+	% xl.setCells(sheet,[randX ,infoY + 19], vertHeader', '99FFCC' );
 
-	field3 = getfield( filenames, char(names(i) ) );
-	xl.setCells( sheet, [ 1 infoY + 20 ], field3', hex2dec('FF6666'));
+	% field3 = getfield( filenames, char(names(i) ) );
+	% xl.setCells( sheet, [ 1 infoY + 20 ], field3', hex2dec('FF6666')); 
 
+	xl.setCells(sheet,[randX - 3, 1],{'Peak','Area under the curve'},'F2CD47');
+	xl.setCells(sheet,[randX*2 - 6, 1],{'Peak','Area under the curve'},'F2CD47');
 	% find all the peaks
 	for j=1:size(field,1)
 
-		% fft trig and rand
-		xl.setCells(sheet,[3, infoY + 19 + j],fft(field(j,:)),'FFFFCC');
-		xl.setCells(sheet,[randX,infoY + 19 + j],fft(field2(j,:)),'FFCCCC');
-
 		% approximation of the integral of the curve sampled at  x = [ startAt : 0.0002 : startAt + 0.0002 * 70 ], y = field(i,:)
 		int = trapz( x, field(j,:) );
-		xl.setCells(sheet,[1 + j,infoY + 15], int );
+		xl.setCells(sheet,[randX - 2, j+1 ], int,'F2CD47' );
 
 		% and area of random values
 		int2 = trapz( x, field2(j,:) );
-		xl.setCells(sheet,[ randX + j ,infoY + 15], int2 );
+		xl.setCells(sheet,[ randX*2 - 5,j+1], int2,'F2CD47' );
 
 		[pk, idx] = findpeaks(field(j,:));
-		[pk2, idx2] = findpeaks(field(j,:));
+		[pk2, idx2] = findpeaks(field2(j,:));
 
 		%  find the greatest of the peaks ( which is distinct from max(field(i,:)) as endpoints may be the max, but aren't peaks )
 		[maxPk,maxPkIdx] = max(pk);
 		[maxPk2,maxPkIdx2] = max(pk2);
 
-		xl.setCells(sheet,[ 1 + j,infoY + 16], maxPk );
-		xl.setCells(sheet,[ randX + j,infoY + 16], maxPk2 );
+		xl.setCells(sheet,[ randX-3,j+1], maxPk,'F2CD47' );
+		xl.setCells(sheet,[ randX*2 - 6,j+1], maxPk2, 'F2CD47' );
+
+	end
+
+	% ========================================================== FFT
+
+	sheet = xl.addSheet( [ sheets{i}.Name '-FFT' ] );
+
+	% next write the filenames over 'Trig' and 'Rand'
+	xl.setCells( sheet, [ 1 1 ], field3', hex2dec('FF6666'));
+
+	vertHeader = Utils.split(sprintf('Trig %f\n',x'),'\n');
+
+	% 'Trig N' and 'Rand N's
+	xl.setCells(sheet,[ 3 1 ], vertHeader', '99FFCC' );
+	vertHeader = Utils.split(sprintf('Rand %f\n',x'),'\n');
+	xl.setCells(sheet,[ randX 1 ], vertHeader', '99FFCC' );
+
+	for j=1:size(field,1)
+
+		xl.setCells( sheet, [ 3 j+1 ], fft(field(j,:)), hex2dec('FFFFCC') );
+		xl.setCells( sheet, [ randX j+1 ], fft(field2(j,:)), hex2dec('FFCCCC') );
+
+	end
+
+	xl.setCells(sheet,[randX - 3, 1],{'Peak','Area under the curve'},'F2CD47');
+	xl.setCells(sheet,[randX*2 - 6, 1],{'Peak','Area under the curve'},'F2CD47');
+	% find all the peaks
+	for j=1:size(field,1)
+
+		% approximation of the integral of the curve sampled at  x = [ startAt : 0.0002 : startAt + 0.0002 * 70 ], y = field(i,:)
+		int = trapz( x, fft(field(j,:)) );
+		xl.setCells(sheet,[randX - 2, j+1 ], int,'F2CD47' );
+
+		% and area of random values
+		int2 = trapz( x, fft(field2(j,:)) );
+		xl.setCells(sheet,[ randX*2 - 5,j+1], int2,'F2CD47' );
+
+		try
+
+			[pk, idx] = findpeaks(fft(field(j,:)));
+			[pk2, idx2] = findpeaks(fft(field2(j,:)));
+
+			%  find the greatest of the peaks ( which is distinct from max(field(i,:)) as endpoints may be the max, but aren't peaks )
+			[maxPk,maxPkIdx] = max(pk);
+			[maxPk2,maxPkIdx2] = max(pk2);
+
+			xl.setCells(sheet,[ randX-3,j+1], maxPk,'F2CD47' );
+			xl.setCells(sheet,[ randX*2 - 6,j+1], maxPk2, 'F2CD47' );
+		catch err
+			msg = getReport(err);
+			warning(msg);
+		end
 
 	end
 

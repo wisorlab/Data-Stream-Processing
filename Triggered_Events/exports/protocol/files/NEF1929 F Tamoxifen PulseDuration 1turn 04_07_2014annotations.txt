@@ -1,0 +1,14 @@
+Experiment ID	NEF1929 F Tamoxifen PulseDuration 1turn
+Animal ID	NEF1929 F Tamoxifen PulseDuration 1turn
+Researcher	Test
+Directory path	
+
+
+Number	Start Time	End Time	Time From Start	Channel	Annotation
+0	04/07/14 12:22:59.217	04/07/14 12:22:59.217	0.0000	ALL	Started Recording
+1	04/07/14 12:33:20.568	04/07/14 12:33:20.568	621.3510	ALL	TTL: Rise
+2	04/07/14 12:43:20.420	04/07/14 12:43:20.420	1221.2030	ALL	TTL: Rise
+3	04/07/14 12:53:20.444	04/07/14 12:53:20.444	1821.2270	ALL	TTL: Rise
+4	04/07/14 13:03:20.358	04/07/14 13:03:20.358	2421.1410	ALL	TTL: Rise
+5	04/07/14 13:13:20.256	04/07/14 13:13:20.256	3021.0390	ALL	TTL: Rise
+6	04/07/14 13:24:30.607	04/07/14 13:24:30.607	3691.3900	ALL	Stopped Recording
