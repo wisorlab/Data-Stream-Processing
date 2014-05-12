@@ -1,5 +1,5 @@
 clear
-addpath C:/Users/brennecke.jonathan/Documents/GitHub/matlab-pipeline/Matlab/etc/matlab-utils/
+addpath ../../../../Matlab/etc/matlab-utils/
 
 % The standard floxed output routine for 400 data points.
 if findobj('type','figure')
