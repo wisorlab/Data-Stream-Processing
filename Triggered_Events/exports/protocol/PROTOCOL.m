@@ -21,7 +21,18 @@ for i=1:length(files)
 	eeg1 = data(:,1);
 	eeg2 = data(:,2);
 	emg = data(:,3);
-	ttl = data(:,4);
+	ttl = data(:,4);  
+
+	% [pow, freq] = Utils.periodogram( eeg1, 4000, hz, 2000);
+
+
+	% tens = Utils.slice(eeg1,4000); % seperate into 10 min bins
+	% twentyHz = Utils.slice(tens(1,:),200);
+	% mean((real(fft(twentyHz(1,:))').^2)/200
+		% mean(real(fft(twentyHz)).^2)'
+		% mean(real(fft(twentyHz))).^2'
+
+
 
 	% n-many samples in 10 min bins and 1 min bins
 	tenMin = 600 * hz;
