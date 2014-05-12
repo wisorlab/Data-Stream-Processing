@@ -68,5 +68,7 @@ function [] = plotStimulationPattern2(fs,t,channel,ttl,waves,stimMean,randMean,l
     axis([0 wavewidth -1 1]);
     suptitle(label);
     hold off;
+    
+    set(findall(gcf,'typ','text'),'fontSize',14,'fontWeight','bold','fontName','Times New Roman')
 
 end
