@@ -1,3 +1,6 @@
+clear
+addpath C:/Users/brennecke.jonathan/Documents/GitHub/matlab-pipeline/Matlab/etc/matlab-utils/
+
 % The standard floxed output routine for 400 data points.
 if findobj('type','figure')
     response = questdlg('Close all plots?','User Input Required','Yes','No','Yes');
@@ -37,29 +40,26 @@ end
 %     filterState = 0;
 % end
 
-Threshold=300;
+% input dialog box asks the user for a Threshold value
+prompt = { 'What is your threshold polarization for sorting positive/negative deflections?' };
+Threshold = inputdlg(prompt,'Input',1,300)
+
   
 response = questdlg('Export to Excel?','User Input Required','Yes','No','Yes');
 if strcmp(response,'Yes')
     exportState = 1;
-    Excel = actxserver('Excel.Application');
-    set(Excel, 'Visible', 1);
-    Workbooks = Excel.Workbooks;
-%     Workbook.triggered = Excel.Workbooks.Open('C:\Users\wisorlab\Documents\Flox Testing Triggered Waveforms With Thy1 Animals.xlsx');
-    Workbook.triggered = invoke(Workbooks, 'Add');
+    
+    xl = XL;
+
     sheetnames = {['Wake < -' num2str(Threshold)], ['-' num2str(Threshold) ' < Wake < ' num2str(Threshold) ], ['Wake > ' num2str(Threshold) ], ...
                   ['Rems < -' num2str(Threshold) ], ['-' num2str(Threshold) ' < Rems < ' num2str(Threshold) ], ['Rems > -' num2str(Threshold) ],...
                   ['SWS < -' num2str(Threshold) ], ['-' num2str(Threshold) '< SWS < ' num2str(Threshold) ], [ 'SWS > ' num2str(Threshold) ], ...
                   ['Unscored < -' num2str(Threshold) ], ['-' num2str(Threshold) '< Unscored <' num2str(Threshold) ], ['Unscored > ' num2str(Threshold) ]};
-    Sheets = Excel.ActiveWorkBook.Sheets;
-    for i = 1:9
-        invoke(Sheets,'Add');
-    end
-    for i = 1:12
-        sheet = get(Sheets, 'Item', i);
-        invoke(sheet, 'Activate');
-        sheet.name = sheetnames{i};
-    end
+
+    sheets = xl.addSheets(sheetnames);
+
+    xl.rmDefaultSheets();
+
 else
     exportState = 0;
 end
@@ -257,11 +257,6 @@ for i = 1:length(files)
             columnInfo{6} = transgene;
             columnInfo{7} = sdvsspont;           
 
-            invoke(Workbook.triggered,'Activate');
-            Sheets = Excel.ActiveWorkBook.Sheets;
-            sheet = get(Sheets, 'Item', j);
-            invoke(sheet, 'Activate');
-
             sheetRange = get(sheet,'Range','A1:G1');
             set(sheetRange, 'Value', columnLabels);
 
@@ -285,15 +280,9 @@ for i = 1:length(files)
                 timeRowLabel{offset+k} = ['Rand ', num2str(timeRow(k))];
             end
             
-            sheetRange = get(sheet,'Range',['H1:',xlscol(length(timeRowLabel)+7),'1']);
-            set(sheetRange, 'Value', timeRowLabel);
-
-           
-            sheetRange = get(sheet,'Range',['H',num2str(rowCount(j)),':',xlscol(length(waves(j,:))+7),num2str(rowCount(j))]);
-            set(sheetRange, 'Value', waves(j,:));
-            
-            sheetRange = get(sheet,'Range',[xlscol(length(waves(j,:))+9),num2str(rowCount(j)),':',xlscol(length(waves(j,:))+length(randoms(j,:))+8),num2str(rowCount(j))]);
-            set(sheetRange, 'Value', randoms(j,:));
+            xl.setCells( sheet, [8,1], timeRowLabel );
+            xl.setCells( sheet, [8, rowCount(j)], waves(j,:) );
+            xl.setCells( sheet, [length(waves(j,:))+9, rowCount(j)], randoms(j,:) );
                 
             sleepstateCount = sleepstateCount + 1;
         end
@@ -304,9 +293,7 @@ for i = 1:length(files)
      end
 
 end
-if exportState == 1
-    delete(Excel);
-end
+
 disp('Processing complete.');
 
 load chirp
