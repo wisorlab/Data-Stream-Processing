@@ -37,8 +37,6 @@ end
 %     filterState = 0;
 % end
 
-Threshold=300;
-  
 response = questdlg('Export to Excel?','User Input Required','Yes','No','Yes');
 if strcmp(response,'Yes')
     exportState = 1;
@@ -47,15 +45,12 @@ if strcmp(response,'Yes')
     Workbooks = Excel.Workbooks;
 %     Workbook.triggered = Excel.Workbooks.Open('C:\Users\wisorlab\Documents\Flox Testing Triggered Waveforms With Thy1 Animals.xlsx');
     Workbook.triggered = invoke(Workbooks, 'Add');
-    sheetnames = {['Wake < -' num2str(Threshold)], ['-' num2str(Threshold) ' < Wake < ' num2str(Threshold) ], ['Wake > ' num2str(Threshold) ], ...
-                  ['Rems < -' num2str(Threshold) ], ['-' num2str(Threshold) ' < Rems < ' num2str(Threshold) ], ['Rems > -' num2str(Threshold) ],...
-                  ['SWS < -' num2str(Threshold) ], ['-' num2str(Threshold) '< SWS < ' num2str(Threshold) ], [ 'SWS > ' num2str(Threshold) ], ...
-                  ['Unscored < -' num2str(Threshold) ], ['-' num2str(Threshold) '< Unscored <' num2str(Threshold) ], ['Unscored > ' num2str(Threshold) ]};
+    sheetnames = {'1 Hz Wake','1 Hz REM','1 Hz SWS','1 Hz Unscored'};
     Sheets = Excel.ActiveWorkBook.Sheets;
-    for i = 1:9
+    for i = 1:1
         invoke(Sheets,'Add');
     end
-    for i = 1:12
+    for i = 1:4
         sheet = get(Sheets, 'Item', i);
         invoke(sheet, 'Activate');
         sheet.name = sheetnames{i};
@@ -100,10 +95,6 @@ for i = 1:length(files)
         commonFileName = files{i}(1:strfind(files{i},'.edf')-1);
     end
     fftfiles = dir(path);
-    
-    
-            
-    
     for j = 1:length(fftfiles)
        [~,name,ext] = fileparts(fftfiles(j).name);
        if strcmp(ext,'.txt') && ~isempty(strfind(name,commonFileName))
@@ -125,7 +116,8 @@ for i = 1:length(files)
 %         sleepdata = importFFTPowerFile([textpath,textfile]);
     end
      [matrix, format, fs] = retrieveData(files{i},path);
-     %matrix=fullmatrix(1:95*60*400,:); INSERT THIS IF WORKING WITH 1st hr of stim only from a file with 1 hz in 1st hr and other stims later.
+     %matrix=fullmatrix(1:95*60*400,:); INSERT THIS IF WORKING WITH 1st hr
+     %of stim only from a file with 1 hz in 1st hr and other stims later.
      
      [~,~,ext] = fileparts(files{i});
      if processSameChannel == 0 % If we need to know which channels to process
@@ -171,9 +163,8 @@ for i = 1:length(files)
      disp('Finding trigger patterns...');
      msbefore = 500;
      msafter = 500;
-  
      triggerPoint = msbefore/1000;
-     [waves,randoms] = findTriggerPattern1HzorlessSortByPolarization(data, matrix(:,ttlIndex), fs, msbefore, msafter, sleepdata,Threshold);  %removed from outputs list: ,stimFreqs,usedTriggers
+     [waves,randoms] = findTriggerPattern1HzContinuous(data, matrix(:,ttlIndex), fs, msbefore, msafter, sleepdata);  %removed from outputs list: ,stimFreqs,usedTriggers
      
      if isempty(waves)
          error('No TTL events found.');
@@ -208,25 +199,21 @@ for i = 1:length(files)
              transgene = 'No';
          end
      end
-    
-     if ~isempty(strfind(lower(files{i}),'spon'))
-         sdvsspont = 'SpontSleep';
-     elseif ~isempty(strfind(lower(files{i}),'sd'))
-         sdvsspont = 'SleepDep';  
+     if strcmpi(strain,'thy')
+        tenHzWaves = waves(13:16,:);
+        waves(9:16,:) = waves(5:12,:);
+        waves(5:8,:) = tenHzWaves;
+     end
+
+     if ~isempty(strfind(lower(files{i}),'vehicle'))
+         intensity = 'Vehicle';
+     elseif ~isempty(strfind(lower(files{i}),'7_ni'))
+         intensity = '7_NI';  
      else  
-         sdvsspont = 'Unknown';
+         intensity = 'Unknown';
      end
      sleepstateCount = 1;
-     
-     waves = num2cell (waves);
-     randoms = num2cell (randoms);
-     waves(cellfun(@isnan, waves)) = {' '};      %Excel mistakes isnan for a number.  So when waves contains isnan values, those values must be converted to ' ' before exporting to excel.
-     randoms(cellfun(@isnan, randoms)) = {' '};  %Excel mistakes isnan for a number.  So when randoms contains isnan values, those values must be converted to ' ' before exporting to excel.
-  
      for j = 1:length(waves(:,1))
-        
-         sleepstateCount=ceil(j/3);
-        
         if sleepstateCount == 1
             sleepstate = 'wake';
         elseif sleepstateCount == 2
@@ -235,6 +222,7 @@ for i = 1:length(files)
             sleepstate = 'SWS';
         else
             sleepstate = 'unscored';
+            sleepstateCount = 0;
         end
         if exportState == 1
             rowCount(j) = rowCount(j)+1;
@@ -246,7 +234,7 @@ for i = 1:length(files)
             columnLabels{4} = 'Animal ID';
             columnLabels{5} = 'Group';
             columnLabels{6} = 'Transgene?';
-            columnLabels{7} = 'SdVsSpont'; 
+            columnLabels{7} = 'Intensity'; 
             
             columnInfo = cell(1,7);
             columnInfo{1} = gender;
@@ -255,7 +243,7 @@ for i = 1:length(files)
             columnInfo{4} = animalID;
             columnInfo{5} = treatment;
             columnInfo{6} = transgene;
-            columnInfo{7} = sdvsspont;           
+            columnInfo{7} = intensity;           
 
             invoke(Workbook.triggered,'Activate');
             Sheets = Excel.ActiveWorkBook.Sheets;
@@ -288,7 +276,6 @@ for i = 1:length(files)
             sheetRange = get(sheet,'Range',['H1:',xlscol(length(timeRowLabel)+7),'1']);
             set(sheetRange, 'Value', timeRowLabel);
 
-           
             sheetRange = get(sheet,'Range',['H',num2str(rowCount(j)),':',xlscol(length(waves(j,:))+7),num2str(rowCount(j))]);
             set(sheetRange, 'Value', waves(j,:));
             
