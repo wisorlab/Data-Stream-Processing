@@ -1,0 +1,320 @@
+% 
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 
+% 
+% 
+% 
+
+function tdt_file_data = main ( params )
+
+	% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	% detect unit activity and slow wave patterns
+	% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	% 
+	% :param params - struct
+	% params is a struct with the following fields:
+	% 
+	% :field channel - channel to look at
+	% :field sortCode = PCA sortcode(s) referring to a cluster of units to be proccessed in parallel 
+	% with the EEG. The sort field can be a scalar or vector of multiple codes.
+	% :field snippetWidth - width (in seconds) of the snippet window
+	% :field snippetOffset - offset (in seconds) into the file to start processing
+	% :field tank - path to a TDT tank
+	% :field block - name of a block within the tank
+
+	addpath './tdt'
+
+	defaults = struct( ...
+		'channel', 1, ...
+		'sortCode', [1:3], ...
+		'snippetWidth', 10, ... % extract a segment of N seconds
+		'snippetOffset',  20 ... % extract the segment at an offset of N seconds
+		);
+
+	% merge the given parameters with the default options
+	params = extend(defaults,params);
+
+	% get the unit activity
+	units = unitactivity( struct( ...
+		'channel', params.channel, ...
+		'sort', params.sortCode, ...
+		'tank', params.tank, ...
+		'block', params.block, ...
+		'snippetWidth', params.snippetWidth, ...
+		'snippetOffset', params.snippetOffset, ...
+		'plot', 'true' ));
+
+
+	% set up parameters that define a slow wave:
+	% 
+	% - Chebyshev Type II Parameters
+	% 	- Passband Edges
+	% 		- lowPassEdge (?)
+	% 		- highPassEdge (?)
+	% 	- StopBand Edges
+	% 		- lowStopEdge (?)
+	% 		- highStopEdge (?)
+	% 	- passBandRipple (?)
+	% 	- stopBandAttenuation (?)
+
+	filtered_matrix = chb_filter( struct( ...
+		'lowPassEdge', 0.5, ...
+		'highPassEdge', 4, ...
+		'lowStopEdge', 0.01, ...
+		'highStopEdge', 10, ...
+		'passBandRipple', 3, ...
+		'stopBandAttenuation', 20, ...
+		'fs', units.fs, ...
+		'data', units.y ));
+
+	% - Wave Detection Parameters
+	% 
+	% 	- amplitude (microV)
+	% 	- maxAmplitude (microV)
+	% 	- p2ptime (seconds)
+	% 	- maxp2ptime (seconds)
+	% 	- epochLength (seconds)
+	% 
+	waves = plotSlowWaves( struct( ...
+		'amplitude', 0.100, ...
+		'maxAmplitude', 0.600, ...
+		'p2ptime', 0.15, ...
+		'maxp2ptime', 2, ...
+		'epochLength', 4, ...
+		'fs', units.fs, ...
+		'x', units.x, ...
+		'y', units.y, ...
+		'filtered_matrix', filtered_matrix ...
+		));
+    
+    title([ num2str(params.snippetOffset) ' seconds']);
+
+    % remove any empty rows    
+    nonEmptyWaves = waves(~cellfun(@(w)(isempty(w)),waves));
+
+	% compute the centered average of all the slow waves
+	[ avg_wave, centered_waves ] = centeredAvarage(nonEmptyWaves);
+
+% 	figure;
+% 	hold on;
+% 
+% 	for i=1:size(centered_waves,1)
+% 		plot(centered_waves(i,:))
+% 	end
+
+	tdt_file_data = units.data;
+
+    
+
+end
+
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% average all the detected slow waves
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function [ avg_wave, centered_waves ] = centeredAvarage( waves )
+
+	% the waves may be differntly sized, so we need to find their center
+	% 
+    width = max(cellfun(@(w)(length(w)),waves))+1;
+
+    centered_waves = zeros(length(waves),width);
+
+    for i=1:length(waves)
+    	if ~isempty(waves{i})
+	    	wave = waves{i}(2,:);
+	    	strt = round((width - length(wave))/2);
+	    	centered_waves(i,strt:strt+length(wave)-1) = wave;
+	    end
+    end
+
+    avg_wave = mean(centered_waves);
+
+end
+
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% CHebyshev filtering
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function filtered_matrix = chb_filter( params )
+
+	% Chebyshev filtering
+	Wp=[ params.lowPassEdge  params.highPassEdge ]/(params.fs/2); Ws=[ params.lowStopEdge params.highStopEdge ]/(params.fs/2);  
+	[n, Wn]=cheb2ord(Wp,Ws,params.passBandRipple, params.stopBandAttenuation);
+	[bb,aa]=cheby2( n, params.stopBandAttenuation, Wn );
+
+	% 'filtfilt' will fail if the matrix is non-invertible, so wrap it in a try-catch block
+	try
+		filtered_matrix = filtfilt(bb,aa,params.data);
+	catch err
+		warning(['The current parameters create a non-invertible matrix that would create improper scaling' ...
+			'Vary the Chebyshev parameters or compression.']);
+	end
+
+end
+
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% add the fields of the struct in 'src' to the fields in 'dest'
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function dest = extend(dest,src)
+
+    % Copy all of the properties in the source objects over to the destination object, 
+    % and return the destination object. It's in-order, so the last source will override
+    % properties of the same name in previous arguments.
+
+    names = fieldnames(src);
+    
+    for i=1:length(names)
+        dest.(names{i}) = src.(names{i});
+    end
+    
+end
+
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% calls the slow wave detection algorithms and plots the slowwaves
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function waves = plotSlowWaves( params )
+
+
+	% the 6th column represents the voltage difference between the maximum and the first point in the wave.
+	slowWaves = detectSlowWaves( params.filtered_matrix, params.fs, params.epochLength );
+	slowWaves = slowWaves( slowWaves(:,5) >= params.p2ptime,:);
+	slowWaves = slowWaves( slowWaves(:,5) <= params.maxp2ptime,:);
+	% slowWaves_ = slowWaves( slowWaves(:,6)>=params.amplitude,:);
+	% slowWaves_ = slowWaves( slowWaves(:,6)<=params.maxAmplitude,:);
+	tableWaves = slowWaves;
+
+	waves = {};
+
+	% the second & fourth columns in 'tableWaves' represent the start and end indices of the wave
+	% plot(filtered_matrix,'b');
+	for i=1:length(tableWaves)
+		p1 = tableWaves(i,2);
+		p2 = tableWaves(i,4);
+
+		if p1 ~= 0 && p2 ~= 0 
+			x = [ params.x(p1), params.x(p2) ];
+			y = [ params.y(p1), params.y(p2) ];
+			waves{i} = [ params.x(p1:p2); params.y(p1:p2) ];
+		
+			plot(x,y,'r')
+		end
+	end
+
+
+
+end
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% find unit activity in data recorded by the TDT system
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 
+% :param params - struct
+% params is a struct with the following fields:
+% 
+% :field channel - channel to look at
+% :field sort = PCA sortcode(s) referring to a cluster of units to be proccessed in parallel 
+% with the EEG. The sort field can be a scalar or vector of multiple codes.
+% :field snippetWidth - width (in seconds) of the snippet window
+% :field snippetOffset - offset (in seconds) into the file to start processing
+% :field plot - boolean value of whether or not to plot the sort codes
+% 
+% --- If the data field is provided, the fields 'tank' and 'block' are not needed and will be ignored 
+% in favor of the data passed in as 'data' ---
+% 
+% :field data - (optional) If a TDT block data set already exists as a matlab structured array, the
+% function may plot data from that structured array (passed in as 'data'), otherwise the parameters 
+% 'tank' and 'block' must be provided.
+% \
+% --- If the following parameters are provided, this function will generate data from the specified
+% tank and block and (optionally) plot the resulting data. ---
+% 
+% :field tank - path to a TDT tank
+% :field block - block name within 'tank'
+function output = unitactivity( params )
+
+	% ~~~~~~~~~~~~~~~~~~~~
+	% parse the parameters
+	% ~~~~~~~~~~~~~~~~~~~~
+	
+	defaults = struct( ...
+		'channel', 1, ...
+		'sort', [1:3], ...
+		'snippetWidth',50, ...
+		'snippetOffset',50, ...
+		'data',[], ...
+		'plot','true');
+  
+	params = extend(defaults,params);
+ 
+	if ~isfield(params,'data') || isempty(params.data)
+        if ~isfield(params,'tank') || ~isfield(params,'block')
+            error(['Either a structured array of data already generated by TDT2mat,' ...
+                'or strings designating a tank and block must be passed as parameters.']);
+            end
+        params.data = TDT2mat( ...
+			params.tank, params.block, ...
+			'VERBOSE',false, ...
+			'CHANNEL',params.channel, ...
+			'T1', params.snippetOffset, 'T2', (params.snippetOffset+params.snippetWidth));
+	end
+	if ~isfield(params,'sort') && ~empty(params.sort)
+		params.sort = 1:3;
+	end
+	
+	% make calling these easier
+	eNeu = params.data.snips.eNeu;
+	EEGx = params.data.streams.EEGx;
+	snippetOffset = params.snippetOffset;
+	snippetWidth = params.snippetWidth;
+	
+	for i=1:length(params.sort)
+		chansort{i} = eNeu.ts(intersect(find(eNeu.chan==params.channel),find(eNeu.sortcode==params.sort(i))));
+	end
+	
+	if snippetOffset < 1/EEGx.fs
+		snippetOffset = 1/EEGx.fs;
+	end
+
+	output = struct();
+    % output.window = params.data.time_ranges;
+	output.y = double(EEGx.data);
+    output.x = 1:length(output.y);
+	output.fs = EEGx.fs;
+	output.data = params.data;
+
+	% if the plot parameter is set to true plot the data
+	if ~strcmp(params.plot,'false')
+
+		figure
+		set(gca,'Color','black');
+		hold on
+		plot(output.x,output.y,'b')
+		a = [0 length(output.x) min(output.y) max(output.y)];
+		axis(a)
+		title(['EEG Signal in channel ' num2str(params.channel) ])
+
+	end
+
+	output.sortEvents = cell(length(params.sort));
+		
+	% calculate (and optionally plot) sortcodes
+	colors = {'r.','m.','g.'};
+	for i=1:length(params.sort)
+		sortEvents = (( chansort{:,i} - snippetOffset)/snippetWidth) * (max(output.x) - min(output.x)) + min(output.x);
+		output.sortEvents{i} = sortEvents;
+
+		% if the plot parameter is set to true plot the data
+		if ~strcmp(params.plot,'false')
+			plot(sortEvents,ones(length(sortEvents)).*a(3)+(abs(a(3)-a(4))*0.05*i),colors{i})
+			% plot(output.sortEvents{i},ones(length(output.sortEvents{i})).*a(3)+(abs(a(3)-a(4))*0.05*i),colors{i})
+			axis(a)
+			title(['Sort Code ' num2str(i)])
+		end
+	end
+end
+
